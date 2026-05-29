@@ -37,3 +37,24 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/cicd-nodejs:latest
+deploy:
+  needs: test-and-build
+  runs-on: ubuntu-latest
+
+  steps:
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          docker pull YOUR_DOCKER_USERNAME/cicd-nodejs:latest
+
+          docker stop cicd-app || true
+          docker rm cicd-app || true
+
+          docker run -d \
+            --name cicd-app \
+            -p 3000:3000 \
+            YOUR_DOCKER_USERNAME/cicd-nodejs:latest
